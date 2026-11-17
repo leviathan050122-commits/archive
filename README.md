@@ -343,21 +343,17 @@
         })();
     </script>
 
+    <!-- Photo list (edit photos.js to change photos and titles) -->
+    <script src="photos.js"></script>
+
     <!-- JavaScript Logic -->
     <script>
-        // Archive photos dataset (mimicking the aesthetic reference)
-        const photos = [
-            { id: 1, url: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1000&auto=format&fit=crop", title: "Nature & Greenery" },
-            { id: 2, url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1000&auto=format&fit=crop", title: "Foggy Balcony View" },
-            { id: 3, url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1000&auto=format&fit=crop", title: "Dense Forest Canopy" },
-            { id: 4, url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1000&auto=format&fit=crop", title: "Minimal Texture" },
-            { id: 5, url: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=1000&auto=format&fit=crop", title: "Courtyard Architecture" },
-            { id: 6, url: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1000&auto=format&fit=crop", title: "City Lights at Night" },
-            { id: 7, url: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=1000&auto=format&fit=crop", title: "Mountain Canyon" },
-            { id: 8, url: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=1000&auto=format&fit=crop", title: "Industrial Glow" },
-            { id: 9, url: "https://images.unsplash.com/photo-1542224566-6e85f2e6772f?q=80&w=1000&auto=format&fit=crop", title: "Tree Textures" },
-            { id: 10, url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?q=80&w=1000&auto=format&fit=crop", title: "Winter Frost" }
-        ];
+        // Archive photos: edit the list in photos.js (files go in the images/ folder).
+        const photos = (window.ARCHIVE_PHOTOS || []).map((item, i) => ({
+            id: i + 1,
+            url: /^https?:\/\//.test(item.file) ? item.file : 'images/' + encodeURIComponent(item.file),
+            title: item.title || ''
+        }));
 
         let currentIndex = 0;
         const track = document.getElementById('marqueeTrack');
