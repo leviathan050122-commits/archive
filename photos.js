@@ -26,16 +26,22 @@ window.SITE_PHOTOS = {
 
     // 하단 흐르는 사진 (images/loop/)
     loop: [
-        { file: "DSC00256.JPG", title: "DSC00256" },
-        { file: "IMG_1892.JPG", title: "IMG_1892" },
-        { file: "IMG_3315.jpeg", title: "IMG_3315" },
+        { file: "DSC00526.JPG", title: "DSC00526" },
+        { file: "DSC00532.JPG", title: "DSC00532" },
+        { file: "DSC00543.JPG", title: "DSC00543" },
+        { file: "DSC00546.JPG", title: "DSC00546" },
+        { file: "DSC00568.JPG", title: "DSC00568" },
+        { file: "DSC00577.JPG", title: "DSC00577" },
+        { file: "DSC00586.JPG", title: "DSC00586" },
+        { file: "DSC00602.JPG", title: "DSC00602" },
+        { file: "DSC00609.JPG", title: "DSC00609" },
+        { file: "IMG_4106.jpeg", title: "IMG_4106" },
+        { file: "IMG_4123.jpeg", title: "IMG_4123" },
+        { file: "IMG_4169.jpeg", title: "IMG_4169" },
         { file: "IMG_4170.jpeg", title: "IMG_4170" },
-        { file: "DSC00028.JPG", title: "DSC00028" },
-        { file: "DSC00608.JPG", title: "DSC00608" },
-        { file: "IMG_1567.JPG", title: "IMG_1567" },
-        { file: "IMG_3834.jpeg", title: "IMG_3834" },
-        { file: "IMG_3938.jpeg", title: "IMG_3938" },
-        { file: "DSC00560.JPG", title: "DSC00560" },
+        { file: "IMG_4171.jpeg", title: "IMG_4171" },
+        { file: "IMG_4191.jpeg", title: "IMG_4191" },
+        { file: "IMG_4224.jpeg", title: "IMG_4224" },
     ],
 
     // Archive 페이지 사진 (images/archive/) — 생성일 기준 최신 사진이 맨 위
