@@ -53,16 +53,17 @@
             #homeView > main { padding:8px 12px 4px; }
             #productGrid { width:100%; max-height:none; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
             .product-frame { max-height: min(48vw, calc(100svh - 220px)); padding:4px; }
-            #marqueeSection { top:-8px; padding:6px 0 max(6px, env(safe-area-inset-bottom)); max-height:22vh; }
+            #homeView > main, #marqueeSection { transform:translateY(-20vh); }
+            #marqueeSection { top:-8px; padding:6px 0 max(6px, env(safe-area-inset-bottom)); max-height:22vh; touch-action:pan-y; }
             #marqueeSection .marquee-group { gap:10px; padding-right:10px; }
-            #marqueeSection .marquee-photo { max-width:42vw; }
+            #marqueeSection .marquee-photo { width:auto; height:auto; max-width:42vw; max-height:var(--marquee-photo-height, 110px); }
             #marqueeSection .marquee-photo.is-portrait { --marquee-photo-height:clamp(90px, 16.5vh, 120px); }
             #marqueeSection .marquee-photo.is-landscape, #marqueeSection .marquee-photo.is-square { --marquee-photo-height:clamp(60px, 11vh, 80px); }
             #archiveView { padding:22px 14px 36px; }
             #archiveView > div:first-child { width:100%; }
             .archive-grid { width:100%; grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:10px; row-gap:24px; }
-            #lightbox { padding: max(16px,env(safe-area-inset-top)) 12px max(16px,env(safe-area-inset-bottom)); }
-            #lightboxImg { max-height:72svh; }
+            #lightbox { padding: max(16px,env(safe-area-inset-top)) 12px max(16px,env(safe-area-inset-bottom)); touch-action:pan-y; }
+            #lightboxImg { max-height:72svh; touch-action:pan-y; }
         }
         @media (max-height:650px) and (min-width:768px) {
             #siteHeader { height:48px; flex-basis:48px; }
@@ -162,7 +163,7 @@
                 <svg class="bgm-icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
                 <svg class="bgm-icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
             </button>
-            <audio id="bgm" src="audio/bgm.mp3" loop preload="auto"></audio>
+            <audio id="bgm" src="audio/bgm.mp3" loop preload="auto" autoplay></audio>
         </div>
         <nav class="flex items-center gap-6" aria-label="Main navigation">
             <a href="#home" id="homeLink" class="hover:opacity-75 transition">Home</a>
@@ -292,6 +293,11 @@
             let period = 0;      // 그룹 1개의 실제 폭(=루프 주기, px)
             let paused = false;  // 마우스가 올라가 있는지
             let lastTime = null;
+            let dragPointer = null;
+            let dragX = 0;
+            let dragStartX = 0;
+            let dragged = false;
+            let suppressClickUntil = 0;
 
             // 그룹 간 실제 간격으로 루프 주기를 잰다(gap/padding 변경에도 안전).
             function measure() {
@@ -325,6 +331,34 @@
             // 마우스가 올라가면 그 자리에서 정지, 벗어나면 그 자리에서 재개.
             section.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') paused = true; });
             section.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') paused = false; });
+            section.addEventListener('pointerdown', (e) => {
+                if (e.pointerType !== 'touch') return;
+                dragPointer = e.pointerId;
+                dragX = dragStartX = e.clientX;
+                dragged = false;
+                paused = true;
+                e.target.setPointerCapture(e.pointerId);
+            });
+            section.addEventListener('pointermove', (e) => {
+                if (e.pointerId !== dragPointer) return;
+                const delta = e.clientX - dragX;
+                dragX = e.clientX;
+                if (Math.abs(e.clientX - dragStartX) > 6) dragged = true;
+                if (period > 0) offset = ((offset - delta) % period + period) % period;
+                track.style.transform = 'translate3d(' + (-offset) + 'px,0,0)';
+                if (dragged) e.preventDefault();
+            });
+            function endTouchDrag(e) {
+                if (e.pointerId !== dragPointer) return;
+                if (dragged) suppressClickUntil = Date.now() + 400;
+                dragPointer = null;
+                paused = false;
+            }
+            section.addEventListener('pointerup', endTouchDrag);
+            section.addEventListener('pointercancel', endTouchDrag);
+            section.addEventListener('click', (e) => {
+                if (Date.now() < suppressClickUntil) { e.preventDefault(); e.stopPropagation(); }
+            }, true);
 
             function frame(now) {
                 if (lastTime === null) lastTime = now;
@@ -417,6 +451,8 @@
         let lightboxList = photos;   // list currently shown in the lightbox
 
         let currentIndex = 0;
+        let lightboxTouch = null;
+        let suppressLightboxClickUntil = 0;
         const track = document.getElementById('marqueeTrack');
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightboxImg');
@@ -767,8 +803,26 @@
 
         // Close on background click
         lightbox.addEventListener('click', (e) => {
+            if (Date.now() < suppressLightboxClickUntil) { e.preventDefault(); e.stopPropagation(); return; }
             if (e.target === lightbox) closeLightboxModal();
         });
+
+        lightbox.addEventListener('pointerdown', (e) => {
+            if (e.pointerType !== 'touch' || e.target.closest('button')) return;
+            lightboxTouch = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            e.target.setPointerCapture(e.pointerId);
+        });
+        lightbox.addEventListener('pointerup', (e) => {
+            if (!lightboxTouch || e.pointerId !== lightboxTouch.id) return;
+            const dx = e.clientX - lightboxTouch.x;
+            const dy = e.clientY - lightboxTouch.y;
+            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
+                suppressLightboxClickUntil = Date.now() + 400;
+                if (dx < 0) showNextPhoto(); else showPrevPhoto();
+            }
+            lightboxTouch = null;
+        });
+        lightbox.addEventListener('pointercancel', () => { lightboxTouch = null; });
 
         // Single keyboard handler: only the topmost overlay reacts.
         document.addEventListener('keydown', (e) => {
