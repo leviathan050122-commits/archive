@@ -25,6 +25,14 @@
   3. `git push origin main` 으로 푸시한다.
 - `.env` 등 `.gitignore` 대상 파일은 커밋하지 않는다.
 
+## Antigravity + GitHub Desktop
+
+- 이 `프로젝트_1` 저장소 폴더를 유일한 작업 폴더로 쓴다. Antigravity와 GitHub Desktop 모두 이 폴더를 연다. 같은 저장소를 다른 경로에 다시 clone해서 번갈아 편집하지 않는다.
+- Antigravity에서 편집하고, 한 번에 한 도구만 파일을 바꾼다. GitHub Desktop에서는 변경 파일을 확인한 뒤 커밋하고 `Push origin` 한다. 커밋만 하면 GitHub 웹에는 반영되지 않는다.
+- 작업 전에는 GitHub Desktop의 `Fetch origin`을 누르고, 원격 변경이 있으면 먼저 `Pull origin` 한다. 로컬 변경이 감지되면 덮어쓰지 말고 먼저 비교한다.
+- 새 마키 사진은 `images/loop/`에 넣는다. 지원 이미지 파일을 커밋하고 푸시한 뒤 웹을 새로고침한다. MP4와 README 복사본은 현재 웹 사진 목록에 사용되지 않는다.
+- `ahead/behind`가 함께 표시되거나 푸시가 거절되면 추가 편집을 멈추고 두 이력을 비교한다. `force push`는 사용하지 않는다.
+
 ## 이미지 업데이트 ("이미지 업데이트 해줘")
 
 - 사진 폴더: `images/products/`(메인 상품), `images/loop/`(하단 마키), `images/archive/`(아카이브)
