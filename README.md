@@ -199,12 +199,10 @@
 
     <!-- Lightbox Modal -->
     <div id="lightbox" class="fixed inset-0 z-50 bg-white/95 backdrop-blur-sm hidden flex flex-col justify-between p-6 md:p-10" role="dialog" aria-modal="true" aria-label="Photo viewer">
-        <!-- Top bar with Close button -->
+        <!-- Top bar -->
         <div class="w-full flex justify-between items-center max-w-7xl mx-auto">
+            <button type="button" id="closeLightbox" class="detail-back">← Back</button>
             <span class="text-xs text-neutral-400 font-mono" id="imageCounter"></span>
-            <button type="button" id="closeLightbox" class="text-xs uppercase tracking-widest font-medium px-3 py-1.5 border border-neutral-200 rounded hover:bg-neutral-100 transition">
-                Close ×
-            </button>
         </div>
 
         <!-- Center Image and Nav Arrows -->
@@ -804,7 +802,7 @@
         // Close on background click
         lightbox.addEventListener('click', (e) => {
             if (Date.now() < suppressLightboxClickUntil) { e.preventDefault(); e.stopPropagation(); return; }
-            if (e.target === lightbox) closeLightboxModal();
+            if (!lightboxImg.contains(e.target) && !e.target.closest('button')) closeLightboxModal();
         });
 
         lightbox.addEventListener('pointerdown', (e) => {
