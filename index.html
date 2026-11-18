@@ -139,6 +139,7 @@
         .detail-price { font-size:16px; margin:0 0 46px; }
         .detail-add { width:100%; max-width:180px; height:48px; border:0; background:#050505; color:#fff; font-size:27px; line-height:1; cursor:pointer; }
         .detail-add:hover { background:#292929; }
+        .detail-add:disabled { opacity:.4; cursor:not-allowed; }
         @media (max-width:767px) {
             .product-detail { inset:52px 8px 8px; padding:18px; }
             .detail-layout { grid-template-columns:1fr; grid-template-rows:minmax(0,1fr) auto; gap:12px; }
@@ -392,21 +393,21 @@
         })();
     </script>
 
-    <!-- Photo lists: edit photos.js (images/products, images/loop, images/archive) -->
+    <!-- Product names and prices, plus fallback photo lists, live in photos.js. -->
     <script src="photos.js"></script>
 
     <!-- JavaScript Logic -->
     <script>
-        // Photo lists live in photos.js. Files go in images/products, images/loop, images/archive.
+        // photos.js keeps product metadata and fallback lists; live photos are discovered from GitHub folders.
         const SITE = window.SITE_PHOTOS || {};
         function resolveImage(file, folder) {
             if (!file) return '';
             return /^https?:\/\//.test(file) ? file : 'images/' + folder + '/' + encodeURIComponent(file);
         }
         function toPhotoList(list, folder) {
-            return (list || []).map((item, i) => ({ id: i + 1, url: resolveImage(item.file, folder), title: item.title || '' }));
+            return (list || []).map((item, i) => ({ id: i + 1, file: item.file, url: resolveImage(item.file, folder), title: item.title || '' }));
         }
-        const photos = toPhotoList(SITE.archive, 'archive');   // Archive page
+        let photos = toPhotoList(SITE.archive, 'archive');     // Archive page
         let loopPhotos = toPhotoList(SITE.loop, 'loop');        // Bottom marquee
         const products = {};                                    // Main page products
         (SITE.products || []).forEach((item, i) => {
@@ -542,7 +543,7 @@
         }
         // Adds a product to the cart without opening the drawer. Returns true on success.
         window.addToCart = function(product) {
-            if (!product || !product.id || !Number.isFinite(Number(product.price))) return false;
+            if (!product || !product.id || product.price == null || !Number.isFinite(Number(product.price))) return false;
             const existing = cart.find(item => item.id === product.id);
             if (existing) existing.quantity += 1;
             else cart.push({ id: product.id, name: product.name || 'Item', price: Number(product.price), image: product.image || '', quantity: 1 });
@@ -573,7 +574,8 @@
             detailImage.src = selectedProduct.image;
             detailImage.alt = selectedProduct.name;
             detailTitle.textContent = selectedProduct.name;
-            detailPrice.textContent = formatWon(selectedProduct.price);
+            detailPrice.textContent = selectedProduct.price == null ? '가격 문의' : formatWon(selectedProduct.price);
+            detailAdd.disabled = selectedProduct.price == null;
             productDetail.classList.remove('hidden');
             updateScrollLock();
             productDetail.querySelector('.detail-back').focus();
@@ -634,7 +636,7 @@
             else img.classList.add('is-square');
         }
 
-        // Render main-page product cards from photos.js
+        // Render main-page product cards from images/products/.
         function renderProducts() {
             document.getElementById('productGrid').innerHTML = Object.values(products).map(p => `
                 <button type="button" class="product-card cursor-pointer" onclick="openProductDetail('${p.id}')" aria-label="View ${p.name}">
@@ -656,26 +658,62 @@
             window.marqueeLoop.mount(groupHTML);
         }
 
-        // GitHub Pages cannot list a folder itself, so read the published loop folder from GitHub.
-        async function loadLoopPhotos() {
-            try {
-                const response = await fetch('https://api.github.com/repos/leviathan050122-commits/archive/contents/images/loop?ref=main');
-                if (!response.ok) throw new Error('Could not load loop photo list');
-                const files = await response.json();
-                const imageFiles = files.filter(file => file.type === 'file' && /\.(jpe?g|png|webp|gif|avif)$/i.test(file.name));
-                if (imageFiles.length) {
-                    loopPhotos = imageFiles.sort((a, b) => a.name.localeCompare(b.name)).map(file => ({
-                        url: file.download_url,
-                        title: file.name.replace(/\.[^.]+$/, '')
-                    }));
-                }
-            } catch (error) {
-                console.warn('Using the saved loop photo list:', error);
-            }
-            renderMarquee();
+        // GitHub Pages cannot list folders itself, so discover all published photos from the repository tree.
+        function updatePhotoList(current, files) {
+            const available = new Map(files.map(file => [file.name, file]));
+            const saved = current.filter(photo => available.has(photo.file)).map(photo => ({ ...photo, url: available.get(photo.file).url }));
+            const savedNames = new Set(saved.map(photo => photo.file));
+            const added = files.filter(file => !savedNames.has(file.name)).sort((a, b) => a.name.localeCompare(b.name)).map((file, index) => ({
+                id: saved.length + index + 1,
+                file: file.name,
+                url: file.url,
+                title: file.name.replace(/\.[^.]+$/, '')
+            }));
+            return [...added, ...saved];
         }
 
-        // Render the full archive as a static two-column grid (once; data is static).
+        function updateProducts(files) {
+            const available = new Map(files.map(file => [file.name, file]));
+            const saved = (SITE.products || []).filter(item => available.has(item.file));
+            const savedNames = new Set(saved.map(item => item.file));
+            const added = files.filter(file => !savedNames.has(file.name)).sort((a, b) => a.name.localeCompare(b.name)).map(file => ({ file: file.name }));
+            Object.keys(products).forEach(id => delete products[id]);
+            [...saved, ...added].forEach(item => {
+                const image = available.get(item.file);
+                const stem = item.file.replace(/\.[^.]+$/, '');
+                const id = item.id || 'product-' + encodeURIComponent(stem);
+                products[id] = {
+                    id,
+                    name: item.name || stem,
+                    price: item.price == null ? null : Number(item.price) || 0,
+                    image: image.url
+                };
+            });
+        }
+
+        async function loadSitePhotos() {
+            try {
+                const response = await fetch('https://api.github.com/repos/leviathan050122-commits/archive/git/trees/main?recursive=1');
+                if (!response.ok) throw new Error('Could not load photo folders');
+                const { tree, truncated } = await response.json();
+                if (truncated) throw new Error('Photo folder listing was truncated');
+                const listImages = folder => tree.filter(item => item.type === 'blob' && item.path.startsWith(`images/${folder}/`) && /\.(jpe?g|png|webp|gif|avif)$/i.test(item.path)).map(item => {
+                    const name = item.path.slice(`images/${folder}/`.length);
+                    const encodedPath = item.path.split('/').map(encodeURIComponent).join('/');
+                    return { name, url: `https://raw.githubusercontent.com/leviathan050122-commits/archive/main/${encodedPath}` };
+                });
+                photos = updatePhotoList(photos, listImages('archive'));
+                loopPhotos = listImages('loop').sort((a, b) => a.name.localeCompare(b.name)).map((file, index) => ({ id: index + 1, file: file.name, url: file.url, title: file.name.replace(/\.[^.]+$/, '') }));
+                updateProducts(listImages('products'));
+            } catch (error) {
+                console.warn('Using the saved photo lists:', error);
+            }
+            renderProducts();
+            renderMarquee();
+            renderArchiveGrid();
+        }
+
+        // Render the full archive as a two-column grid.
         function renderArchiveGrid() {
             archivePhotoCount.textContent = `${photos.length} photos`;
             archiveGrid.innerHTML = photos.map((photo, idx) => `
@@ -757,8 +795,9 @@
         window.addEventListener('popstate', syncViewFromUrl);
 
         renderProducts();
-        loadLoopPhotos();
+        renderMarquee();
         renderArchiveGrid();
+        loadSitePhotos();
         syncViewFromUrl();
     </script>
 </body>

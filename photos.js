@@ -10,7 +10,8 @@
  *  사용법
  *   - 각 폴더에 사진을 넣고 "이미지 업데이트 해줘"라고 하면
  *     이 파일 목록을 폴더 내용에 맞춰 갱신하고 GitHub에 올린다.
- *   - 사진 이름(title), 상품 이름(name), 가격(price)은 여기서 직접 바꾸면 된다.
+ *   - 사진 파일은 웹에서 폴더를 자동으로 읽는다. 사진 제목(title), 상품 이름(name), 가격(price)은 여기서 바꾼다.
+ *   - products 폴더에 새 사진을 넣으면 웹에 자동 표시되며, 가격을 지정하려면 아래 products에 항목을 추가한다.
  *   - 위에서부터 적힌 순서대로 화면에 나온다.
  *   - file 은 해당 폴더 안의 파일 이름. https:// 주소를 적으면 인터넷 이미지를 쓴다.
  *   - 파일 이름은 영어 소문자/숫자/-(하이픈) 권장. 대소문자를 구분한다.
@@ -46,6 +47,9 @@ window.SITE_PHOTOS = {
 
     // Archive 페이지 사진 (images/archive/) — 생성일 기준 최신 사진이 맨 위
     archive: [
+        { file: "DSC00098.JPG", title: "DSC00098" },
+        { file: "IMG_0644.JPG", title: "IMG_0644" },
+        { file: "DSC00512.JPG", title: "DSC00512" },
         { file: "DSC00608.JPG", title: "DSC00608" },
         { file: "DSC00602.JPG", title: "DSC00602" },
         { file: "DSC00600.JPG", title: "DSC00600" },
@@ -60,7 +64,6 @@ window.SITE_PHOTOS = {
         { file: "IMG_3535.jpeg", title: "IMG_3535" },
         { file: "IMG_3391.JPG", title: "IMG_3391" },
         { file: "IMG_3315.jpeg", title: "IMG_3315" },
-        { file: "DSC00103.JPG", title: "DSC00103" },
         { file: "DSC00028.JPG", title: "DSC00028" },
         { file: "IMG_2176.JPG", title: "IMG_2176" },
         { file: "IMG_1892.JPG", title: "IMG_1892" },
