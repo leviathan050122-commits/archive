@@ -85,7 +85,7 @@
         .cart-overlay.is-open { opacity:1; visibility:visible; }
         .cart-drawer { position:fixed; z-index:81; top:0; right:0; width:min(440px,92vw); height:100dvh; background:#fff; box-shadow:-12px 0 40px rgba(0,0,0,.10); transform:translateX(102%); transition:transform .32s cubic-bezier(.2,.75,.25,1); display:flex; flex-direction:column; padding:clamp(20px,3vw,32px); padding-top:max(clamp(20px,3vw,32px),env(safe-area-inset-top)); padding-bottom:max(clamp(20px,3vw,32px),env(safe-area-inset-bottom)); }
         .cart-drawer.is-open { transform:translateX(0); }
-        .cart-drawer-header { display:flex; align-items:center; justify-content:center; padding-bottom:22px; border-bottom:1px solid #ededed; }
+        .cart-drawer-header { display:flex; align-items:center; justify-content:flex-start; padding-bottom:22px; border-bottom:1px solid #ededed; }
         .cart-close { width:100%; min-height:34px; display:flex; align-items:center; justify-content:center; border:0; border-radius:0; background:transparent; padding:0; font:inherit; font-size:18px; font-weight:400; line-height:1; cursor:pointer; }
         .cart-contents { flex:1; min-height:0; overflow:auto; }
         .cart-empty { min-height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:30px 8px; }
@@ -99,7 +99,8 @@
         .cart-items { padding:18px 0; }
         .cart-item { display:grid; grid-template-columns:76px 1fr auto; gap:13px; padding:14px 0; border-bottom:1px solid #eee; }
         .cart-item img { width:76px; height:92px; object-fit:contain; background:transparent; display:block; }
-        .cart-item-title { font-size:12px; font-weight:500; margin:2px 0 7px; }
+        .cart-item-image, .cart-item-title { border:0; background:none; padding:0; cursor:pointer; }
+        .cart-item-title { display:block; font-size:12px; font-weight:500; margin:2px 0 7px; text-align:left; }
         .cart-item-price { font-size:11px; color:#777; }
         .cart-item-controls { display:flex; align-items:center; gap:10px; margin-top:12px; }
         .cart-item-controls button { border:0; background:none; padding:2px 5px; color:#555; cursor:pointer; }
@@ -213,7 +214,7 @@
             </button>
 
             <!-- Lightbox Image -->
-            <div class="lightbox-fade max-h-[75vh] flex items-center justify-center">
+            <div id="lightboxSlide" class="max-h-[75vh] flex items-center justify-center">
                 <img id="lightboxImg" src="" alt="Archive Fullscreen" class="max-h-[75vh] max-w-full object-contain rounded shadow-sm">
             </div>
 
@@ -244,7 +245,7 @@
     <div id="cartOverlay" class="cart-overlay" aria-hidden="true"></div>
     <aside id="cartDrawer" class="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart" aria-hidden="true" inert>
         <div class="cart-drawer-header">
-            <button type="button" id="cartClose" class="cart-close" aria-label="Close cart">x</button>
+            <button type="button" id="cartClose" class="detail-back" aria-label="Back from cart">← Back</button>
         </div>
         <div id="cartContents" class="cart-contents">
             <div id="cartEmpty" class="cart-empty">
@@ -451,9 +452,12 @@
         let currentIndex = 0;
         let lightboxTouch = null;
         let suppressLightboxClickUntil = 0;
+        let lightboxDragX = 0;
+        let lightboxDragY = 0;
         const track = document.getElementById('marqueeTrack');
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightboxImg');
+        const lightboxSlide = document.getElementById('lightboxSlide');
         const imageCounter = document.getElementById('imageCounter');
         const closeLightbox = document.getElementById('closeLightbox');
         const prevBtn = document.getElementById('prevBtn');
@@ -562,9 +566,9 @@
             cartCheckout.disabled = cart.length === 0;
             cartItemsEl.innerHTML = cart.map((item, index) => `
                 <div class="cart-item">
-                    <img src="${item.image}" alt="${item.name}">
+                    <button type="button" class="cart-item-image" onclick="openCartProduct('${item.id}')" aria-label="View ${item.name}"><img src="${item.image}" alt="${item.name}"></button>
                     <div>
-                        <p class="cart-item-title">${item.name}</p>
+                        <button type="button" class="cart-item-title" onclick="openCartProduct('${item.id}')">${item.name}</button>
                         <p class="cart-item-price">${formatWon(item.price)}</p>
                         <div class="cart-item-controls">
                             <button type="button" aria-label="Decrease quantity" onclick="changeCartQuantity(${index},-1)">−</button>
@@ -591,6 +595,11 @@
             renderCart();
         };
         window.removeCartItem = function(index) { cart.splice(index, 1); renderCart(); };
+        window.openCartProduct = function(id) {
+            if (!products[id]) return;
+            closeCart();
+            window.openProductDetail(id);
+        };
         cartOpen.addEventListener('click', openCart);
         cartClose.addEventListener('click', closeCart);
         cartOverlay.addEventListener('click', closeCart);
@@ -764,6 +773,8 @@
             if (!lightboxList[index]) return;
             lightboxReturnFocus = document.activeElement;
             currentIndex = index;
+            lightboxSlide.style.transition = '';
+            lightboxSlide.style.transform = 'translateX(0)';
             updateLightboxContent();
             lightbox.classList.remove('hidden');
             updateScrollLock();
@@ -806,21 +817,53 @@
         });
 
         lightbox.addEventListener('pointerdown', (e) => {
-            if (e.pointerType !== 'touch' || e.target.closest('button')) return;
+            if (e.pointerType !== 'touch' || !e.target.closest('#lightboxSlide')) return;
             lightboxTouch = { id: e.pointerId, x: e.clientX, y: e.clientY };
+            lightboxDragX = e.clientX;
+            lightboxDragY = e.clientY;
+            lightboxSlide.style.transition = 'none';
             e.target.setPointerCapture(e.pointerId);
         });
-        lightbox.addEventListener('pointerup', (e) => {
+        lightbox.addEventListener('pointermove', (e) => {
             if (!lightboxTouch || e.pointerId !== lightboxTouch.id) return;
             const dx = e.clientX - lightboxTouch.x;
             const dy = e.clientY - lightboxTouch.y;
-            if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) {
-                suppressLightboxClickUntil = Date.now() + 400;
-                if (dx < 0) showNextPhoto(); else showPrevPhoto();
+            if (Math.abs(dx) > Math.abs(dy)) {
+                lightboxDragX = dx;
+                lightboxDragY = dy;
+                lightboxSlide.style.transform = `translateX(${dx}px)`;
+                e.preventDefault();
             }
-            lightboxTouch = null;
         });
-        lightbox.addEventListener('pointercancel', () => { lightboxTouch = null; });
+        lightbox.addEventListener('pointerup', (e) => {
+            if (!lightboxTouch || e.pointerId !== lightboxTouch.id) return;
+            const dx = lightboxDragX;
+            const movedHorizontally = Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(lightboxDragY);
+            const direction = dx < 0 ? -1 : 1;
+            lightboxTouch = null;
+            lightboxSlide.style.transition = 'transform 220ms ease-out';
+            if (movedHorizontally && (Math.abs(dx) > lightboxSlide.clientWidth * .18 || Math.abs(dx) > 65)) {
+                suppressLightboxClickUntil = Date.now() + 450;
+                lightboxSlide.style.transform = `translateX(${-direction * 110}vw)`;
+                setTimeout(() => {
+                    if (direction < 0) showNextPhoto(); else showPrevPhoto();
+                    lightboxSlide.style.transition = 'none';
+                    lightboxSlide.style.transform = `translateX(${direction * 110}vw)`;
+                    requestAnimationFrame(() => {
+                        lightboxSlide.style.transition = 'transform 220ms ease-out';
+                        lightboxSlide.style.transform = 'translateX(0)';
+                    });
+                }, 220);
+            } else {
+                if (movedHorizontally) suppressLightboxClickUntil = Date.now() + 350;
+                lightboxSlide.style.transform = 'translateX(0)';
+            }
+        });
+        lightbox.addEventListener('pointercancel', () => {
+            lightboxTouch = null;
+            lightboxSlide.style.transition = 'transform 220ms ease-out';
+            lightboxSlide.style.transform = 'translateX(0)';
+        });
 
         // Single keyboard handler: only the topmost overlay reacts.
         document.addEventListener('keydown', (e) => {
