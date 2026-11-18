@@ -840,14 +840,14 @@
             if (!lightboxTouch || e.pointerId !== lightboxTouch.id) return;
             const dx = lightboxDragX;
             const movedHorizontally = Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(lightboxDragY);
-            const direction = dx < 0 ? -1 : 1;
+            const direction = dx < 0 ? 1 : -1;
             lightboxTouch = null;
             lightboxSlide.style.transition = 'transform 220ms ease-out';
             if (movedHorizontally && (Math.abs(dx) > lightboxSlide.clientWidth * .18 || Math.abs(dx) > 65)) {
                 suppressLightboxClickUntil = Date.now() + 450;
                 lightboxSlide.style.transform = `translateX(${-direction * 110}vw)`;
                 setTimeout(() => {
-                    if (direction < 0) showNextPhoto(); else showPrevPhoto();
+                    if (direction > 0) showNextPhoto(); else showPrevPhoto();
                     lightboxSlide.style.transition = 'none';
                     lightboxSlide.style.transform = `translateX(${direction * 110}vw)`;
                     requestAnimationFrame(() => {
