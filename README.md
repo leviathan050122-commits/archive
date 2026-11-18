@@ -16,6 +16,7 @@
         .marquee-track { display:flex; width:max-content; will-change:transform; transform:translate3d(0,0,0); }
         .marquee-group { display:flex; flex:0 0 auto; align-items:flex-end; gap:1rem; padding-right:1rem; box-sizing:border-box; }
         .marquee-photo { display:block; width:auto; height:var(--marquee-photo-height, 110px); max-width:min(24vw, 260px); object-fit:contain; background:#fff; border:1px solid #111; flex:0 0 auto; }
+        img { -webkit-touch-callout:none; -webkit-user-drag:none; user-select:none; }
         .marquee-photo.is-portrait { --marquee-photo-height:150px; }
         .marquee-photo.is-landscape, .marquee-photo.is-square { --marquee-photo-height:100px; }
         .archive-grid { width:min(100%, 776px); margin:0 auto; display:grid; grid-template-columns:repeat(2,minmax(0,380px)); justify-content:center; align-items:end; column-gap:16px; row-gap:24px; }
@@ -879,6 +880,10 @@
             if (e.key === 'Tab') { trapFocus(e, top); return; }
             if (top === lightbox && e.key === 'ArrowLeft') showPrevPhoto();
             if (top === lightbox && e.key === 'ArrowRight') showNextPhoto();
+        });
+
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('img')) e.preventDefault();
         });
 
         // Initialize
