@@ -106,6 +106,22 @@
         @media (max-width:767px) { .cart-drawer { width:min(420px,94vw); } }
 
 
+        /* Background music toggle (single icon: play <-> pause) */
+        .bgm-toggle { width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; border:0; background:none; padding:0; color:inherit; cursor:pointer; transition:opacity .2s; }
+        .bgm-toggle:hover { opacity:.6; }
+        .bgm-toggle svg { width:14px; height:14px; }
+        .bgm-toggle .bgm-icon-pause { display:none; }
+        .bgm-toggle.is-playing .bgm-icon-play { display:none; }
+        .bgm-toggle.is-playing .bgm-icon-pause { display:block; }
+
+        /* Archive photos shown at 85% of the original layout size */
+        .archive-grid { width:min(100%, 660px); grid-template-columns:repeat(2,minmax(0,323px)); }
+        #archiveView > div:first-child { width:min(100%, 660px); }
+        @media (max-width:767px) {
+            .archive-grid { width:85%; }
+            #archiveView > div:first-child { width:85%; }
+        }
+
         /* Bottom toast notification (e.g. "item added") */
         .toast { position:fixed; left:50%; bottom:max(24px, env(safe-area-inset-bottom)); z-index:90; transform:translate(-50%, 16px); background:#111; color:#fff; padding:12px 22px; font-size:12px; letter-spacing:.04em; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .25s ease, transform .25s ease, visibility .25s ease; }
         .toast.is-visible { opacity:1; visibility:visible; transform:translate(-50%, 0); }
@@ -139,7 +155,14 @@
 
     <!-- Header -->
     <header id="siteHeader" class="w-full flex justify-between items-center text-sm">
-        <a href="https://www.instagram.com/eoekzm/" target="_blank" rel="noopener noreferrer" class="font-medium tracking-tight hover:opacity-75 transition">@eoekzm</a>
+        <div class="flex items-center gap-2">
+            <a href="https://www.instagram.com/eoekzm/" target="_blank" rel="noopener noreferrer" class="font-medium tracking-tight hover:underline underline-offset-4">@eoekzm</a>
+            <button type="button" id="bgmToggle" class="bgm-toggle" aria-label="Play music" aria-pressed="false">
+                <svg class="bgm-icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+                <svg class="bgm-icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>
+            </button>
+            <audio id="bgm" src="audio/bgm.mp3" loop preload="auto"></audio>
+        </div>
         <nav class="flex items-center gap-6" aria-label="Main navigation">
             <a href="#home" id="homeLink" class="hover:opacity-75 transition">Home</a>
             <a href="#archive" id="archiveLink" class="hover:opacity-75 transition">Archive</a>
@@ -329,6 +352,43 @@
                     fill();
                 }
             };
+        })();
+    </script>
+
+    <!-- Background music: tries to autoplay; if the browser blocks it, starts on the first click/key.
+         The toggle button next to @eoekzm plays/pauses and swaps its icon. -->
+    <script>
+        (function () {
+            const audio = document.getElementById('bgm');
+            const btn = document.getElementById('bgmToggle');
+            let userPaused = false;
+            function sync() {
+                const playing = !audio.paused;
+                btn.classList.toggle('is-playing', playing);
+                btn.setAttribute('aria-pressed', String(playing));
+                btn.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+            }
+            function tryPlay() { return audio.play().catch(() => {}); }
+            function startOnFirstInteraction(e) {
+                if (btn.contains(e.target)) return;   // the button handles itself
+                removeFirstInteraction();
+                if (!userPaused && audio.paused) tryPlay();
+            }
+            function removeFirstInteraction() {
+                document.removeEventListener('pointerdown', startOnFirstInteraction);
+                document.removeEventListener('keydown', startOnFirstInteraction);
+            }
+            btn.addEventListener('click', () => {
+                removeFirstInteraction();
+                if (audio.paused) { userPaused = false; tryPlay(); }
+                else { userPaused = true; audio.pause(); }
+            });
+            audio.addEventListener('play', sync);
+            audio.addEventListener('pause', sync);
+            document.addEventListener('pointerdown', startOnFirstInteraction);
+            document.addEventListener('keydown', startOnFirstInteraction);
+            tryPlay();
+            sync();
         })();
     </script>
 
