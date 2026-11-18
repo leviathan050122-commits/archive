@@ -407,7 +407,7 @@
             return (list || []).map((item, i) => ({ id: i + 1, url: resolveImage(item.file, folder), title: item.title || '' }));
         }
         const photos = toPhotoList(SITE.archive, 'archive');   // Archive page
-        const loopPhotos = toPhotoList(SITE.loop, 'loop');      // Bottom marquee
+        let loopPhotos = toPhotoList(SITE.loop, 'loop');        // Bottom marquee
         const products = {};                                    // Main page products
         (SITE.products || []).forEach((item, i) => {
             const id = item.id || 'product-' + (i + 1);
@@ -656,6 +656,25 @@
             window.marqueeLoop.mount(groupHTML);
         }
 
+        // GitHub Pages cannot list a folder itself, so read the published loop folder from GitHub.
+        async function loadLoopPhotos() {
+            try {
+                const response = await fetch('https://api.github.com/repos/leviathan050122-commits/archive/contents/images/loop?ref=main');
+                if (!response.ok) throw new Error('Could not load loop photo list');
+                const files = await response.json();
+                const imageFiles = files.filter(file => file.type === 'file' && /\.(jpe?g|png|webp|gif|avif)$/i.test(file.name));
+                if (imageFiles.length) {
+                    loopPhotos = imageFiles.sort((a, b) => a.name.localeCompare(b.name)).map(file => ({
+                        url: file.download_url,
+                        title: file.name.replace(/\.[^.]+$/, '')
+                    }));
+                }
+            } catch (error) {
+                console.warn('Using the saved loop photo list:', error);
+            }
+            renderMarquee();
+        }
+
         // Render the full archive as a static two-column grid (once; data is static).
         function renderArchiveGrid() {
             archivePhotoCount.textContent = `${photos.length} photos`;
@@ -738,7 +757,7 @@
         window.addEventListener('popstate', syncViewFromUrl);
 
         renderProducts();
-        renderMarquee();
+        loadLoopPhotos();
         renderArchiveGrid();
         syncViewFromUrl();
     </script>
