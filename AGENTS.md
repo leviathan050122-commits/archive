@@ -24,3 +24,16 @@
   2. 변경 내용을 요약한 메시지로 커밋한다.
   3. `git push origin main` 으로 푸시한다.
 - `.env` 등 `.gitignore` 대상 파일은 커밋하지 않는다.
+
+## 이미지 업데이트 ("이미지 업데이트 해줘")
+
+- 사진 폴더: `images/products/`(메인 상품), `images/loop/`(하단 마키), `images/archive/`(아카이브)
+- 목록 파일: `photos.js` 의 `window.SITE_PHOTOS.products / loop / archive`
+- 요청을 받으면:
+  1. 세 폴더의 이미지 파일(jpg, jpeg, png, webp, gif, avif)을 확인한다.
+  2. 폴더에 파일이 하나라도 있으면 해당 목록은 폴더 기준으로 맞춘다:
+     새 파일은 파일명 순으로 추가(title/name은 파일명에서 생성), 폴더에서 사라진 파일은 목록에서 제거,
+     이미 있는 항목의 title/name/price/순서는 유지. 폴더 안 파일이 생기면 Unsplash 예시 항목은 제거한다.
+  3. 파일 이름에 공백/한글/대문자가 있으면 사용자에게 알린다(동작은 하지만 권장하지 않음).
+  4. 새 상품은 가격을 모르면 사용자에게 묻는다.
+  5. README 동기화 → 커밋 → `git push origin main`.

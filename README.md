@@ -151,18 +151,7 @@
     <!-- Main Content Area: Product Showcase (T-shirts) -->
     <main>
         <div id="productGrid">
-            <!-- T-Shirt 1 -->
-            <button type="button" class="product-card cursor-pointer" onclick="openProductDetail('damaged')" aria-label="View Damaged Beyond Repair">
-                <div class="product-frame bg-white rounded-lg transition">
-                    <img src="https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=88" alt="White T-Shirt" class="object-contain">
-                </div>
-            </button>
-            <!-- T-Shirt 2 -->
-            <button type="button" class="product-card cursor-pointer" onclick="openProductDetail('fear')" aria-label="View Fear and Glory">
-                <div class="product-frame bg-white rounded-lg transition">
-                    <img src="https://images.unsplash.com/photo-1564859228273-274232fdb516?auto=format&fit=crop&w=1200&q=88" alt="Black T-Shirt" class="object-contain">
-                </div>
-            </button>
+            <!-- Products are rendered from photos.js (images/products/) -->
         </div>
     </main>
 
@@ -343,17 +332,28 @@
         })();
     </script>
 
-    <!-- Photo list (edit photos.js to change photos and titles) -->
+    <!-- Photo lists: edit photos.js (images/products, images/loop, images/archive) -->
     <script src="photos.js"></script>
 
     <!-- JavaScript Logic -->
     <script>
-        // Archive photos: edit the list in photos.js (files go in the images/ folder).
-        const photos = (window.ARCHIVE_PHOTOS || []).map((item, i) => ({
-            id: i + 1,
-            url: /^https?:\/\//.test(item.file) ? item.file : 'images/' + encodeURIComponent(item.file),
-            title: item.title || ''
-        }));
+        // Photo lists live in photos.js. Files go in images/products, images/loop, images/archive.
+        const SITE = window.SITE_PHOTOS || {};
+        function resolveImage(file, folder) {
+            if (!file) return '';
+            return /^https?:\/\//.test(file) ? file : 'images/' + folder + '/' + encodeURIComponent(file);
+        }
+        function toPhotoList(list, folder) {
+            return (list || []).map((item, i) => ({ id: i + 1, url: resolveImage(item.file, folder), title: item.title || '' }));
+        }
+        const photos = toPhotoList(SITE.archive, 'archive');   // Archive page
+        const loopPhotos = toPhotoList(SITE.loop, 'loop');      // Bottom marquee
+        const products = {};                                    // Main page products
+        (SITE.products || []).forEach((item, i) => {
+            const id = item.id || 'product-' + (i + 1);
+            products[id] = { id, name: item.name || 'Item', price: Number(item.price) || 0, image: resolveImage(item.file, 'products') };
+        });
+        let lightboxList = photos;   // list currently shown in the lightbox
 
         let currentIndex = 0;
         const track = document.getElementById('marqueeTrack');
@@ -505,10 +505,6 @@
         renderCart();
 
         // ---- Product detail ----
-        const products = {
-            damaged: { id:'damaged', name:'Damaged Beyond Repair', price:55000, image:'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=1200&q=88' },
-            fear: { id:'fear', name:'Fear and Glory', price:55000, image:'https://images.unsplash.com/photo-1564859228273-274232fdb516?auto=format&fit=crop&w=1200&q=88' }
-        };
         let selectedProduct = null;
         window.openProductDetail = function(id) {
             selectedProduct = products[id];
@@ -578,11 +574,22 @@
             else img.classList.add('is-square');
         }
 
+        // Render main-page product cards from photos.js
+        function renderProducts() {
+            document.getElementById('productGrid').innerHTML = Object.values(products).map(p => `
+                <button type="button" class="product-card cursor-pointer" onclick="openProductDetail('${p.id}')" aria-label="View ${p.name}">
+                    <div class="product-frame bg-white rounded-lg transition">
+                        <img src="${p.image}" alt="${p.name}" class="object-contain">
+                    </div>
+                </button>
+            `).join('');
+        }
+
         // Populate marquee: build ONE group of photos and hand it to the locked marquee engine,
         // which handles duplication, looping and hover-pause.
         function renderMarquee() {
-            const groupHTML = photos.map((photo, idx) => `
-                <div class="flex-shrink-0 rounded bg-white cursor-pointer group relative" onclick="openLightbox(${idx})">
+            const groupHTML = loopPhotos.map((photo, idx) => `
+                <div class="flex-shrink-0 rounded bg-white cursor-pointer group relative" onclick="openLightbox(${idx}, 'loop')">
                     <img src="${photo.url}" alt="${photo.title}" class="marquee-photo" loading="eager" onload="classifyMarqueePhoto(this)">
                 </div>
             `).join('');
@@ -593,7 +600,7 @@
         function renderArchiveGrid() {
             archivePhotoCount.textContent = `${photos.length} photos`;
             archiveGrid.innerHTML = photos.map((photo, idx) => `
-                <button type="button" class="block text-left" onclick="openLightbox(${idx})" aria-label="Open ${photo.title}">
+                <button type="button" class="block text-left" onclick="openLightbox(${idx}, 'archive')" aria-label="Open ${photo.title}">
                     <img src="${photo.url}" alt="${photo.title}" class="archive-photo" loading="lazy">
                     <span class="archive-caption mt-2 text-xs text-neutral-500">${photo.title}</span>
                 </button>
@@ -601,7 +608,9 @@
         }
 
         // ---- Lightbox ----
-        window.openLightbox = function(index) {
+        window.openLightbox = function(index, listName = 'archive') {
+            lightboxList = listName === 'loop' ? loopPhotos : photos;
+            if (!lightboxList[index]) return;
             lightboxReturnFocus = document.activeElement;
             currentIndex = index;
             updateLightboxContent();
@@ -612,17 +621,17 @@
 
         // Update Lightbox Image and Counter
         function updateLightboxContent() {
-            lightboxImg.src = photos[currentIndex].url;
-            lightboxImg.alt = photos[currentIndex].title;
-            imageCounter.textContent = `${currentIndex + 1} / ${photos.length}`;
+            lightboxImg.src = lightboxList[currentIndex].url;
+            lightboxImg.alt = lightboxList[currentIndex].title;
+            imageCounter.textContent = `${currentIndex + 1} / ${lightboxList.length}`;
         }
 
         function showPrevPhoto() {
-            currentIndex = (currentIndex - 1 + photos.length) % photos.length;
+            currentIndex = (currentIndex - 1 + lightboxList.length) % lightboxList.length;
             updateLightboxContent();
         }
         function showNextPhoto() {
-            currentIndex = (currentIndex + 1) % photos.length;
+            currentIndex = (currentIndex + 1) % lightboxList.length;
             updateLightboxContent();
         }
 
@@ -668,6 +677,7 @@
         window.addEventListener('hashchange', syncViewFromUrl);
         window.addEventListener('popstate', syncViewFromUrl);
 
+        renderProducts();
         renderMarquee();
         renderArchiveGrid();
         syncViewFromUrl();
