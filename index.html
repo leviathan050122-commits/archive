@@ -117,11 +117,11 @@
         .bgm-toggle.is-playing .bgm-icon-play { display:none; }
         .bgm-toggle.is-playing .bgm-icon-pause { display:block; }
 
-        /* Archive photos shown at 85% of the original layout size */
-        .archive-grid { width:min(100%, 660px); grid-template-columns:repeat(2,minmax(0,323px)); }
+        /* Center the two-column archive grid at a smaller width. */
+        .archive-grid { width:min(100%, 533px); grid-template-columns:repeat(2,minmax(0,1fr)); }
         #archiveView > div:first-child { width:min(100%, 660px); }
         @media (max-width:767px) {
-            .archive-grid { width:85%; }
+            .archive-grid { width:68.5%; }
             #archiveView > div:first-child { width:85%; }
         }
 
