@@ -47,8 +47,6 @@ window.SITE_PHOTOS = {
 
     // Archive 페이지 사진 (images/archive/) — 생성일 기준 최신 사진이 맨 위
     archive: [
-        { file: "DSC00098.JPG", title: "DSC00098" },
-        { file: "IMG_0644.JPG", title: "IMG_0644" },
         { file: "DSC00512.JPG", title: "DSC00512" },
         { file: "DSC00608.JPG", title: "DSC00608" },
         { file: "DSC00602.JPG", title: "DSC00602" },
@@ -64,9 +62,12 @@ window.SITE_PHOTOS = {
         { file: "IMG_3535.jpeg", title: "IMG_3535" },
         { file: "IMG_3391.JPG", title: "IMG_3391" },
         { file: "IMG_3315.jpeg", title: "IMG_3315" },
+        { file: "DSC00098.JPG", title: "DSC00098" },
         { file: "DSC00028.JPG", title: "DSC00028" },
         { file: "IMG_2176.JPG", title: "IMG_2176" },
         { file: "IMG_1892.JPG", title: "IMG_1892" },
+        { file: "IMG_7932.jpeg", title: "IMG_7932" },
         { file: "IMG_1567.JPG", title: "IMG_1567" },
+        { file: "IMG_0644.JPG", title: "IMG_0644" },
     ],
 };
